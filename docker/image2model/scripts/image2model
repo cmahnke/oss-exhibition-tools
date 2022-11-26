@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+SCRIPT=/opt/scripts/generate-models.py
+BLENDER="blender --background --python $SCRIPT -- "
+
+$BLENDER "$@"
