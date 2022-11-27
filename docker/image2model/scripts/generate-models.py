@@ -157,7 +157,8 @@ def install_dependencies():
             globals()[module] = module_obj
         except ImportError:
             print("Installing {}".format(module))
-            pip.main(['install', module])
+            pip.main(['install', module, '--disable-pip-version-check', --root-user-action=ignore])
+            globals()[module] = __import__(module)
     cprint("Installed modules {}".format(", ".join(required_modules)), 'green')
     sys.exit(0)
 
