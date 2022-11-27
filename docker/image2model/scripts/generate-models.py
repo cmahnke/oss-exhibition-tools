@@ -144,7 +144,7 @@ def process(inputFile, outputDir, thumbs=False, thumb_size=THUMB_MAX_SIZE, compr
         return [outputFile] + get_textures(outputFile)
 
 def install_dependencies():
-    required_modules = ['termcolor', 'Pillow', 'pypdfium2']
+    required_modules = ['termcolor', ['Pillow', 'PIL'], 'pypdfium2']
     try:
         #Newer versions of PIP need 'from pip._internal.cli.main import main'
         import pip
@@ -153,14 +153,20 @@ def install_dependencies():
         sys.exit(15)
 
     for module in required_modules:
+        if isinstance(module, list):
+            package_name = module[0]
+            import_name = module[1]
+        else:
+            package_name = module
+            import_name = module
+
         try:
-            module_obj = __import__(module)
-            globals()[module] = module_obj
+            globals()[import_name] =  __import__(import_name)
         except ImportError:
             print("Installing {}".format(module))
-            pip.main(['install', module, '--disable-pip-version-check', '--root-user-action=ignore'])
-            globals()[module] = __import__(module)
-    cprint("Installed modules {}".format(", ".join(required_modules)), 'green')
+            pip.main(['install', package_name, '--disable-pip-version-check', '--root-user-action=ignore'])
+            globals()[import_name] =  __import__(import_name)
+            cprint("Installed module {}".format(package_name), 'green')
     sys.exit(0)
 
 def create_archive(to_file, modelFile, keep_input_on_exit=False):
