@@ -11,18 +11,15 @@ ARG GIT_TAG=""
 
 ENV BUILD_DEPS="git gcc" \
     RUN_DEPS="bash busybox blender-headless blender-shared py3-blender py3-pip py3-pillow" \
-    BUILD_DIR=/tmp/build \
     BUILD_CONTEXT=/mnt/build-context
 
 RUN --mount=target=/mnt/build-context \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \
     apk --update upgrade && \
     apk add --no-cache $RUN_DEPS $BUILD_DEPS && \
-    mkdir -p $BUILD_DIR && \
-    cp $BUILD_CONTEXT/docker/image2model/req.py $BUILD_DIR && \
-    blender-headless --python $BUILD_CONTEXT/docker/image2model/req.py && \
     mkdir /opt/scripts && \
     cp $BUILD_CONTEXT/docker/image2model/scripts/generate-models.py /opt/scripts/ && \
+    blender-headless --python /opt/scripts/generate-models.py -- -s && \
     cp $BUILD_CONTEXT/docker/image2model/scripts/image2model /usr/local/bin/ && \
     chmod +x /usr/local/bin/image2model && \
 

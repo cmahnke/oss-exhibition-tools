@@ -1,20 +1,26 @@
 #!/usr/bin/env python
 
 # TODO:
-# * Handle PDF files
 # * Create Sweet Home 3D furniture libraries
-# * Install required dependencies (Currently termcolor, PIL, pypdfium2)
+# * Test missing output parameter
 
 import re, os, sys
 import argparse, pathlib, tempfile, zipfile, atexit
 from os.path import exists
 import xml.etree.ElementTree as ET
-import bpy, addon_utils
-from PIL import Image
-from termcolor import cprint
-import pypdfium2 as pdfium
+try:
+    import bpy, addon_utils
+except ImportError:
+    sys.stderr.write("Can't find Blender Python modules, are you sure you're using Blender Python as interpreter?\n")
+    sys.exit(5)
+try:
+    from PIL import Image
+    from termcolor import cprint
+    import pypdfium2 as pdfium
+except ImportError:
+    setup_required = True
 
-filePattern = ".*?/jpg/.*\.jpg"
+pattern = "**/*.jpg,**/*.pdf"
 THUMB_MAX_SIZE = (500, 500)
 INCH_IN_MM = 25.4
 thumbs = False
@@ -66,8 +72,6 @@ def create_thumb(img, size=THUMB_MAX_SIZE, format='JPEG', suffix='.jpg'):
     return (safe_pil(img, format=format, suffix=suffix), original_size["width"], original_size["height"])
 
 def convert_to_collada(inputFile, outputFile, size=None):
-    # TODO:
-    # * Set sizes (size_mode) to calculated for thumbs
     new_empty()
     import_opts = {
         "use_transparency": True,
@@ -75,7 +79,7 @@ def convert_to_collada(inputFile, outputFile, size=None):
         "directory": os.path.dirname(outputFile),
         "relative": True,
         "align_axis": 'X+'
-        # These require an unreleades blender version
+        # These are only available in a unreleases blender version
         #"blend_method": "OPAQUE",
         #"alpha_mode": False
         #"shader": "SHADELESS"
@@ -140,8 +144,13 @@ def process(inputFile, outputDir, thumbs=False, thumb_size=THUMB_MAX_SIZE, compr
         return [outputFile] + get_textures(outputFile)
 
 def install_dependencies():
-    import pip
     required_modules = ['termcolor', 'Pillow', 'pypdfium2']
+    try:
+        import pip
+    except ImportError:
+        sys.stderr.write("Can't find PIP, make sure it's installed\n")
+        sys.exit(15)
+
     for module in required_modules:
         try:
             module_obj = __import__(module)
@@ -149,6 +158,8 @@ def install_dependencies():
         except ImportError:
             print("Installing {}".format(module))
             pip.main(['install', module])
+    cprint("Installed modules {}".format(", ".join(required_modules)), 'green')
+    sys.exit(0)
 
 def create_archive(to_file, modelFile, keep_input_on_exit=False):
     files = get_textures(modelFile)
@@ -166,30 +177,43 @@ def cleanup():
         pathlib.Path(file).unlink(missing_ok=True)
         cprint("Deleted file {}".format(file), "yellow")
 
-# enable plugins
+# Enable plugins
 addon_utils.enable("io_import_images_as_planes")
 
-parser = argparse.ArgumentParser(prog = 'generate-models.py', description = 'Generate Collada files from images')
+# Other init stuff
+for prefix, uri in namespaces.items():
+    ET.register_namespace(uri, prefix)
+atexit.register(cleanup)
 
+# Setup argument parser
+parser = argparse.ArgumentParser(prog = 'generate-models.py', description = 'Generate Collada files from images')
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('-i', '--input', metavar="[file]", type=pathlib.Path, help="File to convert")
 group.add_argument('-d', '--directory', metavar="[directory]", type=pathlib.Path, help="Path to collect images from")
-parser.add_argument('-o', '--output', metavar="[directory]", type=pathlib.Path, help="Path to write converted files to",required=True)
-parser.add_argument('-s', '--setup', help="Ensure all required modules are present", action='store_true')
+group.add_argument('-s', '--setup', help="Ensure all required modules are present", action='store_true')
+parser.add_argument('-o', '--output', metavar="[directory]", type=pathlib.Path, help="Path to write converted files to")
 parser.add_argument('-z', '--zip', help="Compress results to zip file", action='store_true')
 parser.add_argument('-t', '--thumbs', help="Use thumbanails as textures", action='store_true')
 parser.add_argument('-k', '--keep', help="Keep generated files", action='store_true')
-# TODO: More options: File pattern (for PDF)
+parser.add_argument('-p', '--pattern', help="File pattern for directories, default is '{}'". format(pattern))
 
 try:
     dd = sys.argv.index("--")
-    args = parser.parse_args(args=sys.argv[dd+1:])
-except ValueError as e: # '--' not in the list:
+except ValueError as e:
     cprint("-- not found in argument list, use it after Python file name", "red")
-    args = parser.parse_args([])
+    dd = sys.argv.index("--python") + 1
+args = parser.parse_args(args=sys.argv[dd + 1:])
 
+# Handle arguments
 if args.setup is not None and args.setup is True:
     install_dependencies()
+else:
+    try:
+        if setup_required:
+            sys.stderr.write("Can't find required Python modules - try to run the command with the '-s' switch\n")
+            sys.exit(10)
+    except NameError:
+        pass
 
 if args.thumbs is not None and args.thumbs is True:
     thumbs = True
@@ -204,16 +228,15 @@ if args.keep is not None and args.keep is True:
 else:
     keep = False
 
-# Other init stuff
-for prefix, uri in namespaces.items():
-    ET.register_namespace(uri, prefix)
-atexit.register(cleanup)
+if args.pattern is not None and args.pattern != "":
+    pattern = args.pattern
 
 if args.output is not None and exists(args.output):
     modelDir = os.path.abspath(args.output)
 elif args.output is not None and not exists(args.output):
     raise ValueError("Output directory {} doesn't exists!".format(args.output))
 else:
+    cprint("No output directory given, writing files relative to input", 'yellow')
     parent_dir = os.path.dirname(args.input).parent()
     modelDir = os.path.abspath(os.path.join(parent_dir, '..', 'models'))
     pathlib.Path(modelDir).mkdir(parents=True, exist_ok=True)
@@ -221,23 +244,23 @@ else:
 cprint("Writing Models to {}".format(modelDir), 'green')
 
 if args.directory is not None and exists(args.directory):
-    contentPath = args.directory
-    cFilePattern = re.compile(filePattern)
     generated_files = []
-    for subdir, dirs, files in os.walk(contentPath):
-        for file in sorted(files):
-            fileMatch = cFilePattern.match(os.path.join(subdir, file))
-            if fileMatch:
-                generated_files.extend(process(os.path.join(subdir, file), modelDir, thumbs=thumbs, compress=False))
-                if compress:
-                    zipFilename = os.path.abspath(os.path.join(modelDir, "{}.zip".format(os.path.basename(modelDir))))
-                    with zipfile.ZipFile(zipFilename , mode="w") as archive:
-                        for file in generated_files:
-                            archive.write(file)
-                        archive.close()
-                    cprint("{} written".format(zipFilename), 'green')
-                    if not keep:
-                        cleanup_files.extend(generated_files)
+    filelist = []
+    for p in pattern.split(','):
+        filelist.extend(pathlib.Path(args.directory).glob(p))
+    for f in sorted(filelist):
+        subdir = os.path.split(f)[0]
+        file = os.path.split(f)[1]
+        generated_files.extend(process(os.path.join(subdir, file), modelDir, thumbs=thumbs, compress=False))
+        if compress:
+            zipFilename = os.path.abspath(os.path.join(modelDir, "{}.zip".format(os.path.basename(modelDir))))
+            with zipfile.ZipFile(zipFilename , mode="w") as archive:
+                for file in generated_files:
+                    archive.write(file)
+                archive.close()
+            cprint("{} written".format(zipFilename), 'green')
+            if not keep:
+                cleanup_files.extend(generated_files)
 
 elif args.directory is not None and not exists(args.directory):
     raise ValueError("Directory {} doesn't exists!".format(args.directory))
