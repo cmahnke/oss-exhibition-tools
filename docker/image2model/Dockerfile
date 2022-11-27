@@ -11,7 +11,8 @@ ARG GIT_TAG=""
 
 ENV BUILD_DEPS="git gcc" \
     RUN_DEPS="bash busybox blender-headless blender-shared py3-blender py3-pip py3-pillow" \
-    BUILD_CONTEXT=/mnt/build-context
+    BUILD_CONTEXT=/mnt/build-context \
+    PIP_ROOT_USER_ACTION=ignore
 
 RUN --mount=target=/mnt/build-context \
     echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories && \

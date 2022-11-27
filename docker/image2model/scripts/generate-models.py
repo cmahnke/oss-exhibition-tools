@@ -146,6 +146,7 @@ def process(inputFile, outputDir, thumbs=False, thumb_size=THUMB_MAX_SIZE, compr
 def install_dependencies():
     required_modules = ['termcolor', 'Pillow', 'pypdfium2']
     try:
+        #Newer versions of PIP need 'from pip._internal.cli.main import main'
         import pip
     except ImportError:
         sys.stderr.write("Can't find PIP, make sure it's installed\n")
@@ -157,7 +158,7 @@ def install_dependencies():
             globals()[module] = module_obj
         except ImportError:
             print("Installing {}".format(module))
-            pip.main(['install', module, '--disable-pip-version-check', --root-user-action=ignore])
+            pip.main(['install', module, '--disable-pip-version-check', '--root-user-action=ignore'])
             globals()[module] = __import__(module)
     cprint("Installed modules {}".format(", ".join(required_modules)), 'green')
     sys.exit(0)
