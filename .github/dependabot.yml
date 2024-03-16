@@ -5,11 +5,31 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      github-actions:
+        patterns:
+        - '*'
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      npm:
+        patterns:
+        - '*'
   - package-ecosystem: "pip"
-    directory: "/docker/image2model/scripts"
+    directory: "/docker/image2model/scripts/"
     schedule:
       interval: "daily"
+    groups:
+      pip:
+        patterns:
+        - '*'
+  - package-ecosystem: "docker"
+    directory: "/docker/image2model/"
+    schedule:
+      interval: "daily"
+    groups:
+      docker:
+        patterns:
+        - '*'
