@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:experimental
 
-FROM alpine:3.19.1
+FROM alpine:3.20.0
 
 LABEL maintainer="cmahnke@gmail.com"
 LABEL "com.github.actions.name"="Open source Exhibition tools"
