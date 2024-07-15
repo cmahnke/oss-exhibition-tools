@@ -206,7 +206,7 @@ group.add_argument('-d', '--directory', metavar="[directory]", type=pathlib.Path
 group.add_argument('-s', '--setup', help="Ensure all required modules are present", action='store_true')
 parser.add_argument('-o', '--output', metavar="[directory]", type=pathlib.Path, help="Path to write converted files to")
 parser.add_argument('-z', '--zip', help="Compress results to zip file", action='store_true')
-parser.add_argument('-t', '--thumbs', help="Use thumbanails as textures", action='store_true')
+parser.add_argument('-t', '--thumbs', help="Use thumbnails as textures", action='store_true')
 parser.add_argument('-k', '--keep', help="Keep generated files", action='store_true')
 parser.add_argument('-p', '--pattern', help="File pattern for directories, default is '{}'". format(pattern))
 

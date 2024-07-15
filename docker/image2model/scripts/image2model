@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
 SCRIPT=/opt/scripts/generate-models.py
-BLENDER="blender --background --python $SCRIPT -- "
+BLENDER=`which blender`
+if [ -z "$BLENDER" ] ; then
+  BLENDER=`which blender-headless`
+fi
+BLENDER="$BLENDER --background --python $SCRIPT -- "
 
 $BLENDER "$@"
