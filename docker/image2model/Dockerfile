@@ -1,4 +1,4 @@
-FROM alpine:3.20
+FROM alpine:3.21
 
 LABEL maintainer="cmahnke@gmail.com"
 LABEL "com.github.actions.name"="Open source Exhibition tools"
